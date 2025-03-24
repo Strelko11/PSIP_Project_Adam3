@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "dgSpecHash": "DmgksuGCxCU=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\adams\\Downloads\\PSIP_Project_Adam3\\adam_PSIP\\PSIP_Project_Adam3\\PSIP_Project_Adam3.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\adams\\.nuget\\packages\\packetdotnet\\1.4.7\\packetdotnet.1.4.7.nupkg.sha512",
+    "C:\\Users\\adams\\.nuget\\packages\\sharppcap\\6.3.0\\sharppcap.6.3.0.nupkg.sha512",
+    "C:\\Users\\adams\\.nuget\\packages\\system.memory\\4.5.5\\system.memory.4.5.5.nupkg.sha512",
+    "C:\\Users\\adams\\.nuget\\packages\\system.runtime.compilerservices.unsafe\\6.0.0\\system.runtime.compilerservices.unsafe.6.0.0.nupkg.sha512",
+    "C:\\Users\\adams\\.nuget\\packages\\system.text.encoding.codepages\\6.0.0\\system.text.encoding.codepages.6.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}
