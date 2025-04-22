@@ -5,6 +5,33 @@ using PacketDotNet;
 using System.Timers;
 
 namespace PSIP_Project_Adam3;
+public class ACLRule
+{
+    public string LocalPort { get; set; }       // The local port (for the filter to apply to)
+    public string Direction { get; set; }       // Direction IN/OUT
+    public string Protocol { get; set; }        // Protocol Type (TCP, UDP, ICMP, etc.)
+    public string SourceIP { get; set; }        // Source IP Address
+    public string SourceMAC { get; set; }       // Source MAC Address
+    public string DestinationIP { get; set; }   // Destination IP Address
+    public string DestinationMAC { get; set; }  // Destination MAC Address
+    public string DestinationPort { get; set; } // Destination Port (e.g., 80, 443)
+    public string FilterType { get; set; }      // Filter Type (Permit/Deny)
+
+    public ACLRule(string localPort, string direction, string protocol, 
+        string sourceIP, string sourceMAC, string destinationIP, 
+        string destinationMAC, string destinationPort, string filterType)
+    {
+        LocalPort = localPort;
+        Direction = direction;
+        Protocol = protocol;
+        SourceIP = sourceIP;
+        SourceMAC = sourceMAC;
+        DestinationIP = destinationIP;
+        DestinationMAC = destinationMAC;
+        DestinationPort = destinationPort;
+        FilterType = filterType;
+    }
+}
 
 public class PacketInfo
 {
@@ -68,6 +95,10 @@ public class DeviceManager
     public static int TotalPacketCountOUT_Right = 0;
     public static Dictionary<string, PacketInfo> packetDictionary = new();
     public static System.Timers.Timer ttl_timer;
+    public static int DefaultTTL = 15; // Default TTL
+    public static int CustomTTL = 0; // 0 means "not set", otherwise overrides DefaultTTL
+
+
 
     public static void clearMacTable()
     {
@@ -196,6 +227,7 @@ public class DeviceManager
                 try
                 {
                     dev2?.SendPacket(packet);
+                    count_packets1OUT(packet);
                 }
                 catch (Exception ex)
                 {
@@ -203,7 +235,7 @@ public class DeviceManager
                 }
             });
             // This may block if device2 is disconnected
-            count_packets1(packet);
+            count_packets1IN(packet);
             processPacket(packet, 1);
         }
         catch (Exception ex)
@@ -223,8 +255,6 @@ public class DeviceManager
             }
             TotalPacketCountIN_Right++;
             TotalPacketCountOUT_Left++;
-
-           
             var rawPacket = e.GetPacket();
             var packet = Packet.ParsePacket(rawPacket.LinkLayerType, rawPacket.Data);
             var dev1 = device1 as IInjectionDevice;
@@ -233,6 +263,7 @@ public class DeviceManager
                 try
                 {
                     dev1?.SendPacket(packet);
+                    count_packets2OUT(packet);
                 }
                 catch (Exception ex)
                 {
@@ -241,7 +272,7 @@ public class DeviceManager
             });
            
 
-            count_packets2(packet);
+            count_packets2IN(packet);
             processPacket(packet, 2);
         }
         catch (Exception ex)
@@ -256,10 +287,9 @@ public class DeviceManager
         if (packet != null)
         {
             var destinationMacAddress = packet.DestinationHardwareAddress.ToString();
-            var hashedMacAddress = GetMacAddressHash(destinationMacAddress);
-            if (packetDictionary.ContainsKey(hashedMacAddress))
+            if (packetDictionary.ContainsKey(destinationMacAddress))
             {
-                if (packetDictionary[hashedMacAddress].SourcePort == 1)
+                if (packetDictionary[destinationMacAddress].SourcePort == 1)
                 {
                     var dev1 = device1 as IInjectionDevice;
                     Task.Run(() =>
@@ -275,7 +305,7 @@ public class DeviceManager
                     });
                 }
 
-                if (packetDictionary[hashedMacAddress].SourcePort == 2)
+                if (packetDictionary[destinationMacAddress].SourcePort == 2)
                 {
                     var dev2 = device2 as IInjectionDevice;
                     Task.Run(() =>
@@ -299,23 +329,33 @@ public class DeviceManager
         var packet = p.Extract<EthernetPacket>();
         if (packet != null && p.Extract<IcmpV4Packet>() != null)
         {
-            var sourceMacAddress = packet.SourceHardwareAddress.ToString();
-            var hashedMacAddress = GetMacAddressHash(sourceMacAddress);
-            if (packetDictionary.ContainsKey(hashedMacAddress))
+            int ttlToUse;
+            if (CustomTTL > 0)
             {
-                packetDictionary[hashedMacAddress].TTL = 15;
-                if (packetDictionary[hashedMacAddress].SourcePort != port)
+                ttlToUse = CustomTTL;
+            }
+            else
+            {
+                ttlToUse = DefaultTTL;
+            }
+            var sourceMacAddress = packet.SourceHardwareAddress.ToString();
+            if (packetDictionary.ContainsKey(sourceMacAddress))
+            {
+                packetDictionary[sourceMacAddress].TTL = ttlToUse;
+                if (packetDictionary[sourceMacAddress].SourcePort != port)
                 {
                     Console.WriteLine("New Port value");
-                    packetDictionary[hashedMacAddress].SourcePort = port;
+                    packetDictionary[sourceMacAddress].SourcePort = port;
                 }
 
-                AccessPacketInfo(hashedMacAddress);
+                AccessPacketInfo(sourceMacAddress);
                 return;
             }
 
             Console.WriteLine($"Added new mac Address :{sourceMacAddress}");
-            packetDictionary.Add(hashedMacAddress, new PacketInfo(sourceMacAddress, port, 15));
+            
+            packetDictionary.Add(sourceMacAddress, new PacketInfo(sourceMacAddress, port, ttlToUse));
+    
             //HashSet.Add(hashedMacAddress);
         }
     }
@@ -335,66 +375,42 @@ public class DeviceManager
     }
 
 
-    public static string GetMacAddressHash(string macAddress)
-    {
-        // Ensure the MAC address is in the correct format (e.g., "00-14-22-01-23-45")
-        if (string.IsNullOrEmpty(macAddress))
-            throw new ArgumentException("MAC address cannot be null or empty.");
-
-        // Remove any non-alphanumeric characters (like dashes, colons) from the MAC address
-        macAddress = macAddress.Replace("-", "").Replace(":", "");
-
-        // Create the MD5 hash from the MAC address string
-        using (var md5 = MD5.Create())
-        {
-            var data = Encoding.UTF8.GetBytes(macAddress); // Convert MAC address to byte array
-            var hashBytes = md5.ComputeHash(data); // Compute the MD5 hash
-            return BitConverter.ToString(hashBytes).Replace("-", "").ToLower(); // Convert hash to a string
-        }
-    }
 
     /*############################## COUNT PACKETS FOR DEVICE 1####################################### */
-    public static void count_packets1(Packet packet)
+    public static void count_packets1IN(Packet packet)
     {
         TotalPacketCountIN_Left++;
-        TotalPacketCountOUT_Right++;
 
         var ethernetPacket = packet.Extract<EthernetPacket>();
         if (ethernetPacket != null)
         {
             EthernetPacketCountIN_Left++;
-            EthernetPacketCountOUT_Right++;
         }
 
         var ipPacket = packet.Extract<IPv4Packet>();
         if (ipPacket != null)
         {
             IPPacketCountIN_Left++;
-            IPPacketCountOUT_Right++;
         }
 
         var arpPacket = packet.Extract<ArpPacket>();
         if (arpPacket != null)
         {
             ARPpacketCountIN_Left++;
-            ARPPacketCountOUT_Right++;
         }
 
         var tcpPacket = packet.Extract<TcpPacket>();
         if (tcpPacket != null)
         {
             TCPpacketCountIN_Left++;
-            TCPPacketCountOUT_Right++;
             if (tcpPacket.DestinationPort == 80)
             {
                 HTTPpacketCountIN_Left++;
-                HTTPPacketCountOUT_Right++;
             }
 
             if (tcpPacket.DestinationPort == 443)
             {
                 HTTPSPacketCountIN_Left++;
-                HTTPSPacketCountOUT_Right++;
             }
         }
 
@@ -402,63 +418,101 @@ public class DeviceManager
         if (udpPacket != null)
         {
             UDPpacketCountIN_Left++;
-            UDPPacketCountOUT_Right++;
         }
 
         var icmpPacket = packet.Extract<IcmpV4Packet>();
         if (icmpPacket != null)
         {
             ICMPpacketCountIN_Left++;
+        }
+    }
+    public static void count_packets1OUT(Packet packet)
+    {
+        TotalPacketCountOUT_Right++;
+
+        var ethernetPacket = packet.Extract<EthernetPacket>();
+        if (ethernetPacket != null)
+        {
+            EthernetPacketCountOUT_Right++;
+        }
+
+        var ipPacket = packet.Extract<IPv4Packet>();
+        if (ipPacket != null)
+        {
+            IPPacketCountOUT_Right++;
+        }
+
+        var arpPacket = packet.Extract<ArpPacket>();
+        if (arpPacket != null)
+        {
+            ARPPacketCountOUT_Right++;
+        }
+
+        var tcpPacket = packet.Extract<TcpPacket>();
+        if (tcpPacket != null)
+        {
+            TCPPacketCountOUT_Right++;
+            if (tcpPacket.DestinationPort == 80)
+            {
+                HTTPPacketCountOUT_Right++;
+            }
+
+            if (tcpPacket.DestinationPort == 443)
+            {
+                HTTPSPacketCountOUT_Right++;
+            }
+        }
+
+        var udpPacket = packet.Extract<UdpPacket>();
+        if (udpPacket != null)
+        {
+            UDPPacketCountOUT_Right++;
+        }
+
+        var icmpPacket = packet.Extract<IcmpV4Packet>();
+        if (icmpPacket != null)
+        {
             ICMPPacketCountOUT_Right++;
         }
-        /*else
-        {
-         Console.WriteLine("Unrecognized packet");
-        }*/
     }
 
+
+
     /*############################## COUNT PACKETS FOR DEVICE 2####################################### */
-    public static void count_packets2(Packet packet)
+    public static void count_packets2IN(Packet packet)
     {
         TotalPacketCountIN_Right++;
-        TotalPacketCountOUT_Left++;
 
         var ethernetPacket = packet.Extract<EthernetPacket>();
         if (ethernetPacket != null)
         {
             EthernetPacketCountIN_Right++;
-            EthernetPacketCountOUT_Left++;
         }
 
         var ipPacket = packet.Extract<IPv4Packet>();
         if (ipPacket != null)
         {
             IPPacketCountIN_Right++;
-            IPPacketCountOUT_Left++;
         }
 
         var arpPacket = packet.Extract<ArpPacket>();
         if (arpPacket != null)
         {
             ARPpacketCountIN_Right++;
-            ARPpacketCountOUT_Left++;
         }
 
         var tcpPacket = packet.Extract<TcpPacket>();
         if (tcpPacket != null)
         {
             TCPPacketCountIN_Right++;
-            TCPpacketCountOUT_Left++;
             if (tcpPacket.DestinationPort == 80)
             {
                 HTTPPacketCountIN_Right++;
-                HTTPpacketCountOUT_Left++;
             }
 
             if (tcpPacket.DestinationPort == 443)
             {
                 HTTPSPacketCountIN_Right++;
-                HTTPSPacketCountOUT_Left++;
             }
         }
 
@@ -466,20 +520,65 @@ public class DeviceManager
         if (udpPacket != null)
         {
             UDPPacketCountIN_Right++;
-            UDPpacketCountOUT_Left++;
         }
 
         var icmpPacket = packet.Extract<IcmpV4Packet>();
         if (icmpPacket != null)
         {
             ICMPPacketCountIN_Right++;
+        }
+    }
+    public static void count_packets2OUT(Packet packet)
+    {
+        TotalPacketCountOUT_Left++;
+
+        var ethernetPacket = packet.Extract<EthernetPacket>();
+        if (ethernetPacket != null)
+        {
+            EthernetPacketCountOUT_Left++;
+        }
+
+        var ipPacket = packet.Extract<IPv4Packet>();
+        if (ipPacket != null)
+        {
+            IPPacketCountOUT_Left++;
+        }
+
+        var arpPacket = packet.Extract<ArpPacket>();
+        if (arpPacket != null)
+        {
+            ARPpacketCountOUT_Left++;
+        }
+
+        var tcpPacket = packet.Extract<TcpPacket>();
+        if (tcpPacket != null)
+        {
+            TCPpacketCountOUT_Left++;
+            if (tcpPacket.DestinationPort == 80)
+            {
+                HTTPpacketCountOUT_Left++;
+            }
+
+            if (tcpPacket.DestinationPort == 443)
+            {
+                HTTPSPacketCountOUT_Left++;
+            }
+        }
+
+        var udpPacket = packet.Extract<UdpPacket>();
+        if (udpPacket != null)
+        {
+            UDPpacketCountOUT_Left++;
+        }
+
+        var icmpPacket = packet.Extract<IcmpV4Packet>();
+        if (icmpPacket != null)
+        {
             ICMPpacketCountOUT_Left++;
         }
-        /*else
-        {
-         Console.WriteLine("Unrecognized packet");
-        }*/
     }
+
+
 }
 
 /* public static void MonitorDevices()
@@ -512,3 +611,22 @@ public class DeviceManager
    }
   });
  } */
+ 
+
+/*public static string GetMacAddressHash(string macAddress)
+{
+    // Ensure the MAC address is in the correct format (e.g., "00-14-22-01-23-45")
+    if (string.IsNullOrEmpty(macAddress))
+        throw new ArgumentException("MAC address cannot be null or empty.");
+
+    // Remove any non-alphanumeric characters (like dashes, colons) from the MAC address
+    macAddress = macAddress.Replace("-", "").Replace(":", "");
+
+    // Create the MD5 hash from the MAC address string
+    using (var md5 = MD5.Create())
+    {
+        var data = Encoding.UTF8.GetBytes(macAddress); // Convert MAC address to byte array
+        var hashBytes = md5.ComputeHash(data); // Compute the MD5 hash
+        return BitConverter.ToString(hashBytes).Replace("-", "").ToLower(); // Convert hash to a string
+    }
+}*/
