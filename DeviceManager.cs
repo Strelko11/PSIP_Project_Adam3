@@ -143,6 +143,7 @@ public class DeviceManager
         }
 
         //Console.WriteLine("Current Packet Dictionary:");
+        //
         foreach (var entry in packetDictionary)
             Console.WriteLine(
                 $"MAC Hash: {entry.Key}, MAC: {entry.Value.SourceMacAddress}, Port: {entry.Value.SourcePort}, TTL: {entry.Value.TTL}");
