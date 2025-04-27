@@ -7,36 +7,29 @@ namespace PSIP_Project_Adam3
 {
     public partial class Form1 : Form
     {
-        // Arrays to hold TextBox references for each protocol group.
         private TextBox[] txtLeftIN = new TextBox[8];
         private TextBox[] txtLeftOUT = new TextBox[8];
         private TextBox[] txtRightIN = new TextBox[8];
         private TextBox[] txtRightOUT = new TextBox[8];
 
-        // Timer to periodically update the grid values.
         private System.Windows.Forms.Timer updateTimer;
 
-        // Add a DataGridView to show the MAC table.
         private DataGridView macTableGrid;
 
         public Form1()
         {
-            // Set the default size of the form first
             this.Size = new System.Drawing.Size(800, 600);
 
-            // Now call InitializeComponent() to set up the form's layout
             InitializeComponent();
 
-            // Initialize other controls
             InitializeGrid();
-            InitializeMACTable(); // Initialize the MAC Table DataGridView
+            InitializeMACTable(); 
             InitializeButtons();
             InitializeTimer();
         }
 
         private void InitializeGrid()
         {
-            // Create a TableLayoutPanel with 8 columns and 9 rows (1 header row + 8 protocol rows)
             TableLayoutPanel grid = new TableLayoutPanel
             {
                 ColumnCount = 8,
@@ -45,21 +38,17 @@ namespace PSIP_Project_Adam3
                 AutoSize = true
             };
 
-            // Set equal column widths (each 12.5% of the width)
             for (int i = 0; i < 8; i++)
             {
                 grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.5F));
             }
 
-            // Add header row with a fixed height
             grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
-            // Add protocol rows (one for each protocol)
             for (int i = 0; i < 8; i++)
             {
                 grid.RowStyles.Add(new RowStyle(SizeType.Percent, 100F / 8));
             }
 
-            // Create header labels for each column
             Label headerProtocol1 = new Label
                 { Text = "Protocol", TextAlign = System.Drawing.ContentAlignment.MiddleCenter, Dock = DockStyle.Fill };
             Label headerLeftIN = new Label
@@ -86,16 +75,12 @@ namespace PSIP_Project_Adam3
             grid.Controls.Add(headerProtocol4, 6, 0);
             grid.Controls.Add(headerRightOUT, 7, 0);
 
-            // The order of protocols must match the order of your variable declarations.
-            // (For left side: Ethernet, IP, ARP, TCP, UDP, ICMP, HTTP, HTTPS)
             string[] protocols = new string[] { "Ethernet", "IP", "ARP", "TCP", "UDP", "ICMP", "HTTP", "HTTPS" };
 
-            // Create a row for each protocol.
             for (int i = 0; i < protocols.Length; i++)
             {
-                int row = i + 1; // Row 0 is used for headers.
+                int row = i + 1; 
 
-                // Column 0: protocol name label for Left IN
                 Label lblLeftIN = new Label
                 {
                     Text = protocols[i],
@@ -104,7 +89,6 @@ namespace PSIP_Project_Adam3
                 };
                 grid.Controls.Add(lblLeftIN, 0, row);
 
-                // Column 1: Left IN value TextBox
                 TextBox txtValLeftIN = new TextBox
                 {
                     Name = "txt" + protocols[i] + "LeftIN",
@@ -114,7 +98,6 @@ namespace PSIP_Project_Adam3
                 txtLeftIN[i] = txtValLeftIN;
                 grid.Controls.Add(txtValLeftIN, 1, row);
 
-                // Column 2: protocol name label for Left OUT
                 Label lblLeftOUT = new Label
                 {
                     Text = protocols[i],
@@ -123,7 +106,6 @@ namespace PSIP_Project_Adam3
                 };
                 grid.Controls.Add(lblLeftOUT, 2, row);
 
-                // Column 3: Left OUT value TextBox
                 TextBox txtValLeftOUT = new TextBox
                 {
                     Name = "txt" + protocols[i] + "LeftOUT",
@@ -133,7 +115,6 @@ namespace PSIP_Project_Adam3
                 txtLeftOUT[i] = txtValLeftOUT;
                 grid.Controls.Add(txtValLeftOUT, 3, row);
 
-                // Column 4: protocol name label for Right IN
                 Label lblRightIN = new Label
                 {
                     Text = protocols[i],
@@ -142,7 +123,6 @@ namespace PSIP_Project_Adam3
                 };
                 grid.Controls.Add(lblRightIN, 4, row);
 
-                // Column 5: Right IN value TextBox
                 TextBox txtValRightIN = new TextBox
                 {
                     Name = "txt" + protocols[i] + "RightIN",
@@ -152,7 +132,6 @@ namespace PSIP_Project_Adam3
                 txtRightIN[i] = txtValRightIN;
                 grid.Controls.Add(txtValRightIN, 5, row);
 
-                // Column 6: protocol name label for Right OUT
                 Label lblRightOUT = new Label
                 {
                     Text = protocols[i],
@@ -161,7 +140,6 @@ namespace PSIP_Project_Adam3
                 };
                 grid.Controls.Add(lblRightOUT, 6, row);
 
-                // Column 7: Right OUT value TextBox
                 TextBox txtValRightOUT = new TextBox
                 {
                     Name = "txt" + protocols[i] + "RightOUT",
@@ -172,40 +150,34 @@ namespace PSIP_Project_Adam3
                 grid.Controls.Add(txtValRightOUT, 7, row);
             }
 
-            // Add the grid to the Form's controls.
             this.Controls.Add(grid);
         }
 
-        // Initialize the MAC Table DataGridView
         private void InitializeMACTable()
         {
             macTableGrid = new DataGridView
             {
                 Dock = DockStyle.Bottom,
-                Height = 200, // Adjust height based on how much data you want to show
+                Height = 200, 
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
                 ReadOnly = true
             };
 
-            // Add columns for MAC address, TTL, and Port
             macTableGrid.Columns.Add("MacAddress", "MAC Address");
             macTableGrid.Columns.Add("TTL", "TTL");
             macTableGrid.Columns.Add("Port", "Port");
 
-            // Add the DataGridView to the form
             this.Controls.Add(macTableGrid);
         }
 
         private void InitializeButtons()
         {
-            // Create a panel to hold the buttons at the bottom of the form.
             Panel buttonPanel = new Panel
             {
                 Dock = DockStyle.Bottom,
                 Height = 40
             };
 
-            // Start button
             Button btnStart = new Button
             {
                 Text = "Start",
@@ -216,13 +188,10 @@ namespace PSIP_Project_Adam3
             };
             btnStart.Click += (s, e) =>
             {
-                // Calls the method to list devices.
                 DeviceManager.ListDevices();
-                //DeviceManager.MonitorDevices();
                 DeviceManager.decrementTime();
             };
 
-            // End button
             Button btnEnd = new Button
             {
                 Text = "End",
@@ -233,7 +202,6 @@ namespace PSIP_Project_Adam3
             };
             btnEnd.Click += (s, e) =>
             {
-                // Stops capture on device1.
                 DeviceManager.device1.StopCapture();
                 DeviceManager.device2.StopCapture();
             };
@@ -248,10 +216,8 @@ namespace PSIP_Project_Adam3
             };
             btnClearMAC.Click += (s, e) =>
             {
-                // Calls the method to clear the MAC table.
                 DeviceManager.clearMacTable();
 
-                // Optionally, clear the rows from the DataGridView as well.
                 macTableGrid.Rows.Clear();
             };
 
@@ -265,10 +231,8 @@ namespace PSIP_Project_Adam3
             };
             btnClearStat.Click += (s, e) =>
             {
-                // Calls the method to clear the MAC table.
                 DeviceManager.clearStats();
             };
-            // TTL Label
             Label lblTTL = new Label
             {
                 Text = "Set TTL:",
@@ -279,7 +243,6 @@ namespace PSIP_Project_Adam3
                 TextAlign = System.Drawing.ContentAlignment.MiddleCenter
             };
 
-// TTL Input TextBox
             TextBox txtTTLInput = new TextBox
             {
                 Width = 60,
@@ -288,7 +251,6 @@ namespace PSIP_Project_Adam3
                 Top = 5
             };
 
-// Apply TTL Button
             Button btnSetTTL = new Button
             {
                 Text = "Apply TTL",
@@ -312,7 +274,6 @@ namespace PSIP_Project_Adam3
             };
 
 
-// Add TTL components to the panel
             buttonPanel.Controls.Add(lblTTL);
             buttonPanel.Controls.Add(txtTTLInput);
             buttonPanel.Controls.Add(btnSetTTL);
@@ -329,16 +290,13 @@ namespace PSIP_Project_Adam3
         private void InitializeTimer()
         {
             updateTimer = new System.Windows.Forms.Timer();
-            updateTimer.Interval = 100; // Interval in milliseconds (1 second)
+            updateTimer.Interval = 100; 
             updateTimer.Tick += (s, e) => UpdateGridValues();
             updateTimer.Start();
         }
 
-        // Call this method to update the TextBox values based on your DeviceManager variables.
         public void UpdateGridValues()
         {
-            // Make sure the order in your protocols array matches the order of your variable declarations.
-            // Left IN (Column 2 in one-indexed terms)
             txtLeftIN[0].Text = DeviceManager.EthernetPacketCountIN_Left.ToString();
             txtLeftIN[1].Text = DeviceManager.IPPacketCountIN_Left.ToString();
             txtLeftIN[2].Text = DeviceManager.ARPpacketCountIN_Left.ToString();
@@ -348,7 +306,6 @@ namespace PSIP_Project_Adam3
             txtLeftIN[6].Text = DeviceManager.HTTPpacketCountIN_Left.ToString();
             txtLeftIN[7].Text = DeviceManager.HTTPSPacketCountIN_Left.ToString();
 
-            // Left OUT (Column 4 in one-indexed terms)
             txtLeftOUT[0].Text = DeviceManager.EthernetPacketCountOUT_Left.ToString();
             txtLeftOUT[1].Text = DeviceManager.IPPacketCountOUT_Left.ToString();
             txtLeftOUT[2].Text = DeviceManager.ARPpacketCountOUT_Left.ToString();
@@ -358,7 +315,6 @@ namespace PSIP_Project_Adam3
             txtLeftOUT[6].Text = DeviceManager.HTTPpacketCountOUT_Left.ToString();
             txtLeftOUT[7].Text = DeviceManager.HTTPSPacketCountOUT_Left.ToString();
 
-            // Right IN (Column 6 in one-indexed terms)
             txtRightIN[0].Text = DeviceManager.EthernetPacketCountIN_Right.ToString();
             txtRightIN[1].Text = DeviceManager.IPPacketCountIN_Right.ToString();
             txtRightIN[2].Text = DeviceManager.ARPpacketCountIN_Right.ToString();
@@ -368,7 +324,6 @@ namespace PSIP_Project_Adam3
             txtRightIN[6].Text = DeviceManager.HTTPPacketCountIN_Right.ToString();
             txtRightIN[7].Text = DeviceManager.HTTPSPacketCountIN_Right.ToString();
 
-            // Right OUT (Column 8 in one-indexed terms)
             txtRightOUT[0].Text = DeviceManager.EthernetPacketCountOUT_Right.ToString();
             txtRightOUT[1].Text = DeviceManager.IPPacketCountOUT_Right.ToString();
             txtRightOUT[2].Text = DeviceManager.ARPPacketCountOUT_Right.ToString();
@@ -378,23 +333,17 @@ namespace PSIP_Project_Adam3
             txtRightOUT[6].Text = DeviceManager.HTTPPacketCountOUT_Right.ToString();
             txtRightOUT[7].Text = DeviceManager.HTTPSPacketCountOUT_Right.ToString();
 
-            // Update MAC table (the new part)
             UpdateMACTable();
         }
 
-        // Method to update the MAC table in the DataGridView
         private void UpdateMACTable()
         {
-            // Clear the previous rows
             macTableGrid.Rows.Clear();
 
-            // Locking the dictionary to avoid concurrent modification
             lock (DeviceManager.packetDictionary)
             {
                 foreach (var entry in DeviceManager.packetDictionary)
                 {
-                    // Assuming 'Port' is part of the value in the packetDictionary
-                    // Add a new row for each dictionary entry including the Port
                     macTableGrid.Rows.Add(entry.Value.SourceMacAddress, entry.Value.TTL, entry.Value.SourcePort);
                 }
             }
