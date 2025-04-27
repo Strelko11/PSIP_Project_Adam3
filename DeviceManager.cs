@@ -5,33 +5,6 @@ using PacketDotNet;
 using System.Timers;
 
 namespace PSIP_Project_Adam3;
-public class ACLRule
-{
-    public string LocalPort { get; set; }       // The local port (for the filter to apply to)
-    public string Direction { get; set; }       // Direction IN/OUT
-    public string Protocol { get; set; }        // Protocol Type (TCP, UDP, ICMP, etc.)
-    public string SourceIP { get; set; }        // Source IP Address
-    public string SourceMAC { get; set; }       // Source MAC Address
-    public string DestinationIP { get; set; }   // Destination IP Address
-    public string DestinationMAC { get; set; }  // Destination MAC Address
-    public string DestinationPort { get; set; } // Destination Port (e.g., 80, 443)
-    public string FilterType { get; set; }      // Filter Type (Permit/Deny)
-
-    public ACLRule(string localPort, string direction, string protocol, 
-        string sourceIP, string sourceMAC, string destinationIP, 
-        string destinationMAC, string destinationPort, string filterType)
-    {
-        LocalPort = localPort;
-        Direction = direction;
-        Protocol = protocol;
-        SourceIP = sourceIP;
-        SourceMAC = sourceMAC;
-        DestinationIP = destinationIP;
-        DestinationMAC = destinationMAC;
-        DestinationPort = destinationPort;
-        FilterType = filterType;
-    }
-}
 
 public class PacketInfo
 {
@@ -95,8 +68,8 @@ public class DeviceManager
     public static int TotalPacketCountOUT_Right = 0;
     public static Dictionary<string, PacketInfo> packetDictionary = new();
     public static System.Timers.Timer ttl_timer;
-    public static int DefaultTTL = 15; // Default TTL
-    public static int CustomTTL = 0; // 0 means "not set", otherwise overrides DefaultTTL
+    public static int DefaultTTL = 15;
+    public static int CustomTTL = 0; 
 
 
 
@@ -234,7 +207,6 @@ public class DeviceManager
                     //Console.WriteLine("Error forwarding packet to device2: " );
                 }
             });
-            // This may block if device2 is disconnected
             count_packets1IN(packet);
             processPacket(packet, 1);
         }
@@ -577,56 +549,4 @@ public class DeviceManager
             ICMPpacketCountOUT_Left++;
         }
     }
-
-
 }
-
-/* public static void MonitorDevices()
- {
-  Task.Run(async () =>
-  {
-   while (true)
-   {
-    await Task.Delay(1000);
-    try
-    {
-     if (device1 != null && !device1.Started)
-     {
-      Console.WriteLine("Reconnecting to device 1");
-      device1.Open(DeviceModes.Promiscuous | DeviceModes.NoCaptureLocal);
-      device1.StartCapture();
-     }
-
-     if (device2 != null && !device2.Started)
-     {
-      Console.WriteLine("Reconecting to device 2");
-      device2.Open(DeviceModes.Promiscuous | DeviceModes.NoCaptureLocal);
-      device2.StartCapture();
-     }
-    }
-    catch (Exception ex)
-    {
-     Console.WriteLine("Error reconnecting the device");
-    }
-   }
-  });
- } */
- 
-
-/*public static string GetMacAddressHash(string macAddress)
-{
-    // Ensure the MAC address is in the correct format (e.g., "00-14-22-01-23-45")
-    if (string.IsNullOrEmpty(macAddress))
-        throw new ArgumentException("MAC address cannot be null or empty.");
-
-    // Remove any non-alphanumeric characters (like dashes, colons) from the MAC address
-    macAddress = macAddress.Replace("-", "").Replace(":", "");
-
-    // Create the MD5 hash from the MAC address string
-    using (var md5 = MD5.Create())
-    {
-        var data = Encoding.UTF8.GetBytes(macAddress); // Convert MAC address to byte array
-        var hashBytes = md5.ComputeHash(data); // Compute the MD5 hash
-        return BitConverter.ToString(hashBytes).Replace("-", "").ToLower(); // Convert hash to a string
-    }
-}*/

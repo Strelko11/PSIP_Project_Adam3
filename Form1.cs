@@ -18,12 +18,11 @@ namespace PSIP_Project_Adam3
 
         // Add a DataGridView to show the MAC table.
         private DataGridView macTableGrid;
-        private List<ACLRule> aclRules = new List<ACLRule>(); // List to store ACL rules
 
         public Form1()
         {
             // Set the default size of the form first
-            this.Size = new System.Drawing.Size(800, 600); 
+            this.Size = new System.Drawing.Size(800, 600);
 
             // Now call InitializeComponent() to set up the form's layout
             InitializeComponent();
@@ -33,156 +32,7 @@ namespace PSIP_Project_Adam3
             InitializeMACTable(); // Initialize the MAC Table DataGridView
             InitializeButtons();
             InitializeTimer();
-            InitializeACLControls();
         }
-
-
-        private void InitializeACLControls()
-        {
-            // ACL Configuration Panel (similar to MAC Table position)
-            Panel aclPanel = new Panel
-            {
-                Dock = DockStyle.Bottom,
-                Height = 250 // Adjust height as needed
-            };
-
-            // Create a DataGridView to display ACL Rules
-            DataGridView aclTableGrid = new DataGridView
-            {
-                Dock = DockStyle.Fill,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                ReadOnly = false, // Allow editing ACL rules
-                AllowUserToAddRows = false, // Disable automatic row addition
-                RowHeadersVisible = false, // Hide row headers
-            };
-
-            // Define columns for the ACL table (matching your fields)
-            aclTableGrid.Columns.Add("LocalPort", "Local Port");
-            aclTableGrid.Columns.Add("Direction", "Direction");
-            aclTableGrid.Columns.Add("Protocol", "Protocol");
-            aclTableGrid.Columns.Add("SourceIP", "Source IP");
-            aclTableGrid.Columns.Add("SourceMAC", "Source MAC");
-            aclTableGrid.Columns.Add("DestIP", "Dest IP");
-            aclTableGrid.Columns.Add("DestMAC", "Dest MAC");
-            aclTableGrid.Columns.Add("DestPort", "Dest Port");
-            aclTableGrid.Columns.Add("FilterType", "Filter Type");
-
-            // Add the grid to the ACL panel
-            aclPanel.Controls.Add(aclTableGrid);
-
-            // Add ACL Configuration Fields (Textboxes and Comboboxes)
-            FlowLayoutPanel aclControlPanel = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Top,
-                Height = 60, // Compact height for controls
-                FlowDirection = FlowDirection.LeftToRight, // Align controls horizontally
-                WrapContents = true, // Allow wrapping if controls exceed width
-                AutoSize = true
-            };
-
-            // Create controls for adding a new ACL rule
-            TextBox txtLocalPort = new TextBox() { Width = 60, Margin = new Padding(5) };
-            ComboBox cmbDirection = new ComboBox
-                { Width = 60, DropDownStyle = ComboBoxStyle.DropDownList, Margin = new Padding(5) };
-            cmbDirection.Items.AddRange(new string[] { "IN", "OUT" });
-            ComboBox cmbProtocol = new ComboBox
-                { Width = 80, DropDownStyle = ComboBoxStyle.DropDownList, Margin = new Padding(5) };
-            cmbProtocol.Items.AddRange(new string[] { "TCP", "UDP", "ICMP", "ARP", "IP" });
-            TextBox txtSourceIP = new TextBox() { Width = 80, Margin = new Padding(5) };
-            TextBox txtSourceMAC = new TextBox() { Width = 100, Margin = new Padding(5) };
-            TextBox txtDestIP = new TextBox() { Width = 80, Margin = new Padding(5) };
-            TextBox txtDestMAC = new TextBox() { Width = 100, Margin = new Padding(5) };
-            TextBox txtDestPort = new TextBox() { Width = 60, Margin = new Padding(5) };
-            ComboBox cmbFilterType = new ComboBox
-                { Width = 80, DropDownStyle = ComboBoxStyle.DropDownList, Margin = new Padding(5) };
-            cmbFilterType.Items.AddRange(new string[] { "Permit", "Deny" });
-
-            // Button to add new ACL Rule
-            Button btnAddACL = new Button
-            {
-                Text = "Add ACL",
-                Width = 80,
-                Height = 30,
-                Margin = new Padding(5)
-            };
-
-            // Click event for adding a new ACL rule
-            btnAddACL.Click += (s, e) =>
-            {
-                // Collect all inputs
-                string localPort = txtLocalPort.Text;
-                string direction = cmbDirection.SelectedItem?.ToString();
-                string protocol = cmbProtocol.SelectedItem?.ToString();
-                string sourceIP = txtSourceIP.Text;
-                string sourceMAC = txtSourceMAC.Text;
-                string destIP = txtDestIP.Text;
-                string destMAC = txtDestMAC.Text;
-                string destPort = txtDestPort.Text;
-                string filterType = cmbFilterType.SelectedItem?.ToString();
-
-                // Validate fields
-                if (string.IsNullOrEmpty(localPort) || string.IsNullOrEmpty(direction) ||
-                    string.IsNullOrEmpty(protocol) ||
-                    string.IsNullOrEmpty(sourceIP) || string.IsNullOrEmpty(sourceMAC) || string.IsNullOrEmpty(destIP) ||
-                    string.IsNullOrEmpty(destMAC) || string.IsNullOrEmpty(destPort) || string.IsNullOrEmpty(filterType))
-                {
-                    MessageBox.Show("Please fill in all fields.");
-                    return;
-                }
-
-                // Add a new row to the ACL table with the collected data
-                aclTableGrid.Rows.Add(localPort, direction, protocol, sourceIP, sourceMAC, destIP, destMAC, destPort,
-                    filterType);
-
-                // Optionally clear the fields after adding the rule
-                txtLocalPort.Clear();
-                cmbDirection.SelectedIndex = -1;
-                cmbProtocol.SelectedIndex = -1;
-                txtSourceIP.Clear();
-                txtSourceMAC.Clear();
-                txtDestIP.Clear();
-                txtDestMAC.Clear();
-                txtDestPort.Clear();
-                cmbFilterType.SelectedIndex = -1;
-            };
-
-            // Add controls to the aclControlPanel
-            aclControlPanel.Controls.Add(new Label
-                { Text = "Local Port", Width = 60, TextAlign = ContentAlignment.MiddleCenter });
-            aclControlPanel.Controls.Add(txtLocalPort);
-            aclControlPanel.Controls.Add(new Label
-                { Text = "Direction", Width = 60, TextAlign = ContentAlignment.MiddleCenter });
-            aclControlPanel.Controls.Add(cmbDirection);
-            aclControlPanel.Controls.Add(new Label
-                { Text = "Protocol", Width = 80, TextAlign = ContentAlignment.MiddleCenter });
-            aclControlPanel.Controls.Add(cmbProtocol);
-            aclControlPanel.Controls.Add(new Label
-                { Text = "Source IP", Width = 80, TextAlign = ContentAlignment.MiddleCenter });
-            aclControlPanel.Controls.Add(txtSourceIP);
-            aclControlPanel.Controls.Add(new Label
-                { Text = "Source MAC", Width = 100, TextAlign = ContentAlignment.MiddleCenter });
-            aclControlPanel.Controls.Add(txtSourceMAC);
-            aclControlPanel.Controls.Add(new Label
-                { Text = "Dest IP", Width = 80, TextAlign = ContentAlignment.MiddleCenter });
-            aclControlPanel.Controls.Add(txtDestIP);
-            aclControlPanel.Controls.Add(new Label
-                { Text = "Dest MAC", Width = 100, TextAlign = ContentAlignment.MiddleCenter });
-            aclControlPanel.Controls.Add(txtDestMAC);
-            aclControlPanel.Controls.Add(new Label
-                { Text = "Dest Port", Width = 60, TextAlign = ContentAlignment.MiddleCenter });
-            aclControlPanel.Controls.Add(txtDestPort);
-            aclControlPanel.Controls.Add(new Label
-                { Text = "Filter Type", Width = 80, TextAlign = ContentAlignment.MiddleCenter });
-            aclControlPanel.Controls.Add(cmbFilterType);
-            aclControlPanel.Controls.Add(btnAddACL);
-
-            // Add the ACL control panel above the table
-            aclPanel.Controls.Add(aclControlPanel);
-
-            // Add the ACL panel to the form
-            this.Controls.Add(aclPanel);
-        }
-
 
         private void InitializeGrid()
         {
